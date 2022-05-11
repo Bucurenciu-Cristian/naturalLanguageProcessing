@@ -1,31 +1,16 @@
-//requiring path and fs modules
 const path = require('path');
 const fs = require('fs');
-//joining path of directory
+const natural = require('natural');
 const paths = {
     reuters: path.join(__dirname, 'reuters'),
     stopWords: path.join(__dirname, 'stopwords'),
     encoding: 'utf8'
 }
-//passsing directoryPath and callback function
-const removeDotFromLastItemInArray = (vector) => {
-    const lastString = vector[vector.length - 1].replace(".", "")
-    vector[vector.length - 1] = lastString;
-    return vector;
-}
-const findTheWordsWithTheDots = (vector) => {
-    const tempVect = []
-    vector.map(item => {
-            if (item.endsWith(".")) {
-                tempVect.push(item)
-            }
-        }
-    )
-    return tempVect;
-}
-const removeTheSymbolFromArray = (vector, simbol) => {
-    
-};
+let globalVector = [], localVector = [];
+const vectorLocalMare = []
+
+const stemmer = natural.LancasterStemmer;
+const tokenizer = new natural.WordTokenizer();
 const findAndTrimTheText = (bigString, startTag, endTag, split = " ") => {
     const startTagLength = startTag.length;
     const beginIndex = bigString.search(startTag)
@@ -35,72 +20,145 @@ const findAndTrimTheText = (bigString, startTag, endTag, split = " ") => {
         .trim()
         .split(split)
 }
-
-const globalVector = [];
-
-fs.readdir(paths.stopWords, (err, files) => {
-//handling error
-    if (err) {
-        return console.log('Unable to scan directory: ' + err);
-    }
-    //listing all files using forEach
-    for (const file of files) {
-        // console.log(file);
-        const plainTextLong = fs.readFileSync(paths.stopWords + "/" + file, paths.encoding)
-    }
-});
-fs.readdir(paths.reuters, callbackFunctionReuters);
-
-function callbackFunctionReuters(err, files) {
-    //handling error
-    if (err) {
-        return console.log('Unable to scan directory: ' + err);
-    }
-    //listing all files using forEach
-    for (const file of files) {
-        const plainTextLong = fs.readFileSync(paths.reuters + "/" + file, paths.encoding)
-        const titluArray = removeDotFromLastItemInArray(findAndTrimTheText(plainTextLong, "<title>", "</title>"))
-        const abrevieriTitle = findTheWordsWithTheDots(titluArray);
-        const textArray = findAndTrimTheText(plainTextLong, "<text>", "</text>", "\n")
-            .map(line => line.slice(3, line.length - 4).split(" "))
-            .map((array) => removeDotFromLastItemInArray(array))
-            
-        const abrevieriText = textArray.flatMap(tablou => {
-            return findTheWordsWithTheDots(tablou)
-        });
-        console.log(abrevieriText)
-        // console.log(interiorText, "\n", file, "\n", titleLastString, "\n", abrevieriTitle)
-        // const flatInteriorText = interiorText.flat();
-        {
-            let topicsStringSearch = '<codes class="bip:topics:1.0">';
-            const topicsIndex = plainTextLong.search(topicsStringSearch);
-            const topicsSfarsit = plainTextLong.lastIndexOf("</codes>")
-            let codeString = "code=";
-            const ArrayTopicsCodes = plainTextLong
-                .slice(topicsIndex + topicsStringSearch.length, topicsSfarsit)
-                .trim()
-                .split('\n')
-                .filter(item => {
-                    if (item.includes(codeString)) {
-                        return true;
-                    }
-                })
-                .map(x => x
-                    .slice(
-                        x.search(codeString) + codeString.length + 1,
-                        x.length - 3
-                    )
-                )
-            // console.log(ArrayTopicsCodes)
-        }
-        {
-            const sourceStr = 'I learned to play the Ukulele in Lebanon.';
-            const searchStr = 'le';
-            //One liner
-            const removeDuplicates = (arr) => [...new Set(arr)];
-            const indexes = [...sourceStr.matchAll(new RegExp(searchStr, 'gi'))].map(a => a.index);
-            // console.log(indexes); // [2, 25, 27, 33]
-        }
+const addToGlobalVector = (word) => {
+    if (!globalVector.includes(word)) {
+        globalVector.push(word)
     }
 };
+const removeCharacters = (tablou, artefacte) => {
+    return tablou.map(item => {
+        if (!artefacte.includes(item)) {
+            return item
+        } else {
+            return undefined
+        }
+    });
+}
+const addToLocalVector = (word) => {
+    const index = globalVector.indexOf(word)
+    localVector[index] = (localVector[index] + 1) || 1;
+}
 
+const emit = (content = "Nu ai introdus nimic momentan, too bad", nameFile = "output", extFile = ".txt") => {
+    fs.appendFileSync(nameFile + extFile, content.concat("\r\n"));
+};
+const arrayWithArtefacts = ['$', "(", ")", "\\n", "quot"]
+
+const numeFisier = "reuters34";
+const scrieVectorulGlobalInFisier = (tablou) => {
+    tablou.map(word => emit(`@attribute ${word}`, numeFisier))
+}
+const scrieVectoriiLocaliInFisier = (tablou) => {
+    emit("@data", numeFisier);
+    tablou.forEach(item => {
+        const appearance = item.vector
+            .map((x, i) => {
+                return (`${i}:${x} `)
+            }).join("");
+        
+        const nameFile = item.fisier.split(".")[0];
+        const topics = item.topicsCodes.join(" ");
+        emit(`${nameFile} # ${appearance}# ${topics}`, numeFisier)
+    });
+}
+const citesteDinFisiere = () => {
+    const directoriesReuters = fs.readdirSync(paths.reuters);
+    fs.writeFileSync(`${numeFisier}.txt`, '')
+    
+    directoriesReuters.map(fisier => {
+        localVector = [];
+        switch (path.extname(fisier)) {
+            case ".XML":
+                let fullPathOfCurrentFile = paths.reuters + "/" + fisier;
+                const plainTextLong = fs.readFileSync(fullPathOfCurrentFile, paths.encoding)
+                let titleText = findAndTrimTheText(plainTextLong, "<title>", "</title>")
+                let paragraphText = findAndTrimTheText(plainTextLong, "<text>", "</text>", "\n")
+                    .map(line => line.slice(3, line.length - 4).split(" "))
+                paragraphText.unshift(...titleText)
+                paragraphText = paragraphText.join("\n")
+                
+                
+                // paragraphText = tokenizer.tokenize(paragraphText)
+                paragraphText = stemmer.tokenizeAndStem(paragraphText);
+                
+                
+                paragraphText = paragraphText.filter(item => isNotInteger(item));
+                paragraphText = removeCharacters(paragraphText, arrayWithArtefacts)
+                
+                for (let word of paragraphText) {
+                    addToGlobalVector(word)
+                    addToLocalVector(word)
+                }
+                
+                globalVector = globalVector
+                    .filter(word => word !== undefined)
+                    .filter(word => word.length > 2)
+                let ArrayTopicsCodes = [];
+            {
+                let topicsStringSearch = '<codes class="bip:topics:1.0">';
+                const topicsIndex = plainTextLong.search(topicsStringSearch);
+                const topicsSfarsit = plainTextLong.lastIndexOf("</codes>")
+                let codeString = "code=";
+                ArrayTopicsCodes = plainTextLong
+                    .slice(topicsIndex + topicsStringSearch.length, topicsSfarsit)
+                    .trim()
+                    .split('\n')
+                    .filter(item => {
+                        if (item.includes(codeString)) {
+                            return true;
+                        }
+                    })
+                    .map(x => x
+                        .slice(
+                            x.search(codeString) + codeString.length + 1,
+                            x.length - 3
+                        )
+                    )
+            }
+            {
+                const sourceStr = 'I learned to play the Ukulele in Lebanon.';
+                const searchStr = 'le';
+                //One liner
+                const removeDuplicates = (arr) => [...new Set(arr)];
+                const indexes = [...sourceStr.matchAll(new RegExp(searchStr, 'gi'))].map(a => a.index);
+                // console.log(indexes); // [2, 25, 27, 33]
+            }
+                vectorLocalMare.push({
+                    vector: localVector,
+                    lungimea: localVector.length,
+                    fisier,
+                    "topicsCodes": ArrayTopicsCodes
+                })
+                break;
+            case ".txt":
+                break;
+            default:
+                console.log(`This is a stupid extension of ${path.extname(fisier)} in this file: ${fisier}`)
+                break;
+            
+        }
+    });
+}
+
+
+function isNotInteger(str) {
+    if (typeof str !== 'string') return true;
+    const num = Number(str);
+    let esteNumar = Number.isInteger(num);
+    if (esteNumar) {
+        const lungime = str.split("");
+        if (lungime.length > 3 && esteNumar) return true
+    }
+    let nuEsteNumar = !esteNumar;
+    return nuEsteNumar;
+}
+
+//MAIN
+citesteDinFisiere();
+console.log("S-a terminat citirea din fisier");
+
+scrieVectorulGlobalInFisier(globalVector);
+console.log("Vectorul Global e gata");
+
+scrieVectoriiLocaliInFisier(vectorLocalMare);
+console.log("Programul s-a finalizat");
