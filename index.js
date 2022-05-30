@@ -6,6 +6,8 @@ const paths = {
     stopWords: path.join(__dirname, 'stopwords'),
     encoding: 'utf8'
 }
+const randomInterogation = require("./Interogare");
+
 let globalVector = [], localVector = [];
 const vectorLocalMare = []
 
@@ -80,8 +82,6 @@ const citesteDinFisiere = () => {
                 
                 // paragraphText = tokenizer.tokenize(paragraphText)
                 paragraphText = stemmer.tokenizeAndStem(paragraphText);
-                
-                
                 paragraphText = paragraphText.filter(item => isNotInteger(item));
                 paragraphText = removeCharacters(paragraphText, arrayWithArtefacts)
                 
@@ -114,14 +114,6 @@ const citesteDinFisiere = () => {
                             x.length - 3
                         )
                     )
-            }
-            {
-                const sourceStr = 'I learned to play the Ukulele in Lebanon.';
-                const searchStr = 'le';
-                //One liner
-                const removeDuplicates = (arr) => [...new Set(arr)];
-                const indexes = [...sourceStr.matchAll(new RegExp(searchStr, 'gi'))].map(a => a.index);
-                // console.log(indexes); // [2, 25, 27, 33]
             }
                 vectorLocalMare.push({
                     vector: localVector,
